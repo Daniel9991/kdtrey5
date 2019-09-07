@@ -1,0 +1,5 @@
+.bloop
+.dynamodb-local
+.metals
+target
+*~
