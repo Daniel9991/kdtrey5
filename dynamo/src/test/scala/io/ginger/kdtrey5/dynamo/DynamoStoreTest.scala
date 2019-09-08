@@ -18,7 +18,7 @@ class DynamoStoreTest extends FunSuite {
 
   test("create tables") {
     val store = new TestStore()
-    store.createVersionsTable()
+    store.createVersionsTableIfNecessary()
     store.createNewVersion("v1")
   }
 

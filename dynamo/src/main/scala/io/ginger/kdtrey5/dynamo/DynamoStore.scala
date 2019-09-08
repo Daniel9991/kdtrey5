@@ -22,6 +22,8 @@ import com.amazonaws.services.dynamodbv2.model.AttributeDefinition
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput
+import com.amazonaws.services.dynamodbv2.model.TableStatus
+import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException
 
 object Helpers {
   def raise(e: ScanamoError) = throw new Exception(e.toString)
@@ -40,7 +42,7 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
 
   val keyCodec: Codec[K, NodeId]
   val valueCodec: Codec[V, String]
-  
+
   val baseTableName: String
 
   protected val dynamo: AmazonDynamoDBAsync
@@ -52,7 +54,7 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
       val allVersions = EitherT(Scanamo(dynamo).exec(versions.scan())).fold(raise, identity)
       allVersions.map(_.version).maximumOption.get
     }
-    println(s"latestVersion: $latestVersion")
+    println(s"latestVersion: $baseTableName-$latestVersion")
     Table[Node](s"$baseTableName-$latestVersion")
   }
 
@@ -62,7 +64,7 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
 
   override def rootId_=(id: NodeId): Unit = {
     val newNode = Node(
-      id = rootNodeIdKey, 
+      id = rootNodeIdKey,
       keys = Seq(id),
       nodes = Seq.empty,
       values = Seq.empty,
@@ -83,7 +85,7 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
       KDBranch(
         id = node.id,
         keys = node.keys.map(keyCodec.decode).toArray,
-        nodes = node.values.toArray,
+        nodes = node.nodes.toArray,
         size = node.size
       )
     }
@@ -93,44 +95,72 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
     val newNode: Node = node match {
       case leaf: KDLeaf[K, V] =>
         Node(
-          id = id, 
-          keys = node.keys.map(keyCodec.encode),
+          id = id,
+          keys = node.keys.filter(_ != null).map(keyCodec.encode),
           nodes = Seq.empty,
-          values = leaf.values.map(valueCodec.encode),
+          values = leaf.values.filter(_ != null).map(valueCodec.encode),
           size = node.size)
       case branch: KDBranch[K, V] =>
         Node(
-          id = id, 
-          keys = node.keys.map(keyCodec.encode),
-          nodes = Seq.empty,
-          values = branch.nodes,
+          id = id,
+          keys = node.keys.filter(_ != null).map(keyCodec.encode),
+          nodes = branch.nodes.filter(_ != null),
+          values = Seq.empty,
           size = node.size)
     }
     Scanamo(dynamo).exec(nodes.put(newNode))
   }
 
-  def createVersionsTable(): Unit = {
+  def createVersionsTableIfNecessary(): Unit = {
+    val tableName = s"$baseTableName-versions"
+    if (tableExists(tableName)) return
     val request = new CreateTableRequest()
-      .withTableName(s"$baseTableName-versions")
+      .withTableName(tableName)
       .withKeySchema(
         new KeySchemaElement().withAttributeName("version").withKeyType(KeyType.HASH))
       .withAttributeDefinitions(
         new AttributeDefinition().withAttributeName("version").withAttributeType(ScalarAttributeType.S))
       .withProvisionedThroughput(new ProvisionedThroughput(1, 1))
     dynamo.createTable(request)
+    waitForTableReady(tableName)
   }
 
   def createNewVersion(version: String): Unit = {
+    val tableName = s"$baseTableName-$version"
     val request = new CreateTableRequest()
-      .withTableName(s"$baseTableName-$version")
+      .withTableName(tableName)
       .withKeySchema(
         new KeySchemaElement().withAttributeName("id").withKeyType(KeyType.HASH))
       .withAttributeDefinitions(
         new AttributeDefinition().withAttributeName("id").withAttributeType(ScalarAttributeType.S))
       .withProvisionedThroughput(new ProvisionedThroughput(1, 1))
     val result = dynamo.createTable(request)
+    waitForTableReady(tableName)
     val newVersion = Version(version)
     Scanamo(dynamo).exec(versions.put(newVersion))
+  }
+
+  private def waitForTableReady(tableName: String): Unit = {
+    var retriesLeft = 120
+    while ({
+      val response = dynamo.describeTable(tableName)
+      (response.getTable.getTableStatus != TableStatus.ACTIVE.name) && (retriesLeft > 0)
+    }) {
+      Thread.sleep(1000L)
+      retriesLeft -= 1
+    }
+    if (retriesLeft == 0) {
+      throw new Exception(s"Timeout waiting for table creation: $tableName")
+    }
+  }
+
+  private def tableExists(tableName: String): Boolean = {
+    try {
+      val response = dynamo.describeTable(tableName)
+      true
+    } catch {
+      case e: ResourceNotFoundException => false
+    }
   }
 }
 
@@ -142,4 +172,3 @@ case class Node(
   nodes: Seq[String],
   values: Seq[String],
   size: Int)
-
