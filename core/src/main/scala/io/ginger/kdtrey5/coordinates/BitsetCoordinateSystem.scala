@@ -32,6 +32,10 @@ object BitsetCoordinateSystem extends CoordinateSystem {
 
   case class BitsetPoint(val bits: BitSet, val length: Int) extends super.Point {
     override def toString = {
+      s"BitsetPoint(${asBinaryString})"
+    }
+
+    def asBinaryString: String = {
       val sb = new StringBuilder()
       var pos = length - 1
       while (pos >= 0) {
@@ -39,7 +43,11 @@ object BitsetCoordinateSystem extends CoordinateSystem {
         sb.append(ch)
         pos -= 1
       }
-      s"BitsetPoint($sb)"
+      sb.toString
+    }
+
+    def asByteArray: Array[Byte] = {
+      bits.toByteArray
     }
   }
 
@@ -48,9 +56,9 @@ object BitsetCoordinateSystem extends CoordinateSystem {
       val sb = new StringBuilder()
       var pos = length - 1
       while (pos >= 0) {
-        val ch = 
+        val ch =
           if (mask.get(pos)) 'x'
-          else if (bits.get(pos)) '1' 
+          else if (bits.get(pos)) '1'
           else '0'
         sb.append(ch)
         pos -= 1
@@ -106,7 +114,13 @@ object BitsetCoordinateSystem extends CoordinateSystem {
     BitsetPoint(bits, len)
   }
 
-  /** Create a BitsetPlane from a bitmask string where 'x' represents an undefined dimension, 
+  /** Create a BitsetPoint from a byte array */
+  def pointFromByteArray(bytes: Array[Byte], bits: Int): BitsetPoint = {
+    BitsetPoint(BitSet.valueOf(bytes), bits)
+  }
+
+
+  /** Create a BitsetPlane from a bitmask string where 'x' represents an undefined dimension,
    *  e.g. "011xx00x1"
    */
   def planeFromBinaryString(bitMask: String): BitsetPlane = {

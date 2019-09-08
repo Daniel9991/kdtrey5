@@ -7,7 +7,7 @@ sealed trait KDNode[K, V] {
   def keys: Array[K]
   def size: Int
   override def hashCode: Int = id.hashCode
-} 
+}
 
 case class KDBranch[K, V](
   val id: NodeId,
@@ -23,7 +23,7 @@ case class KDBranch[K, V](
           this.size == other.size &&
           arrayEquals(this.keys, other.keys, size) &&
           arrayEquals(this.nodes, other.nodes, size)
-      case _ => false 
+      case _ => false
     }
   }
 }
@@ -42,7 +42,7 @@ case class KDLeaf[K, V](
           this.size == other.size &&
           arrayEquals(this.keys, other.keys, size) &&
           arrayEquals(this.values, other.values, size)
-      case _ => false 
+      case _ => false
     }
   }
 }
