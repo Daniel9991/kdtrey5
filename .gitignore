@@ -1,4 +1,4 @@
-.bloop
+**/.bloop
 .dynamodb-local
 .metals
 target
