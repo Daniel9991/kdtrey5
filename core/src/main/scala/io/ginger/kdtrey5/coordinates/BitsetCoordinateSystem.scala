@@ -28,8 +28,8 @@ object BitsetCoordinateSystem extends CoordinateSystem {
       while (pos >= 0) {
         val xbit = x.bits.get(pos)
         val ybit = y.bits.get(pos)
-        if ( xbit && !ybit) return  1
-        if (!xbit &&  ybit) return -1
+        if (xbit && !ybit) return 1
+        if (!xbit && ybit) return -1
         pos -= 1
       }
       return 0
@@ -63,7 +63,6 @@ object BitsetCoordinateSystem extends CoordinateSystem {
     }
   }
 
-
   /** Create a BitsetPoint from a string, e.g. "01100111" */
   def pointFromBinaryString(bits: String): BitsetPoint = {
     BitsetPoint(bitSetFromString(bits), bits.length)
@@ -87,12 +86,13 @@ object BitsetCoordinateSystem extends CoordinateSystem {
   // note: unoptimized
   def bitSetFromString(binary: String): BitSet = {
     val bs = new BitSet()
-    binary.reverse.zipWithIndex foreach { case (bit, pos) =>
-      bit match {
-        case '0' => // false by default
-        case '1' => bs.set(pos, true)
-        case _ => throw new Exception(s"illegal value for bits: $binary")
-      }
+    binary.reverse.zipWithIndex foreach {
+      case (bit, pos) =>
+        bit match {
+          case '0' => // false by default
+          case '1' => bs.set(pos, true)
+          case _   => throw new Exception(s"illegal value for bits: $binary")
+        }
     }
     bs
   }

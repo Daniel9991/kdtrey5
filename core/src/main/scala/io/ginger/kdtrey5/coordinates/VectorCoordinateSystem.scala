@@ -2,6 +2,13 @@ package io.ginger.kdtrey5.coordinates
 
 import java.util.BitSet
 
+/**
+ * An arbitrary-length vector coordinate system.
+ *
+ * e.g. points can be Array(1,2), Array(1,2,3), ...
+ *
+ * Distance is define as dot-product between two points.
+ */
 object VectorCoordinateSystem extends CoordinateSystem {
   type DISTANCE = VectorDistance
   type POINT = VectorPoint
@@ -23,8 +30,8 @@ object VectorCoordinateSystem extends CoordinateSystem {
       while (pos < a1.length) {
         val v1 = a1(pos)
         val v2 = a2(pos)
-        if ( v1 > v2) return  1
-        if ( v1 < v2) return -1
+        if (v1 > v2) return 1
+        if (v1 < v2) return -1
         pos += 1
       }
       return 0
@@ -37,7 +44,8 @@ object VectorCoordinateSystem extends CoordinateSystem {
     }
 
     override def |-|(other: POINT): DISTANCE = {
-      if (this.values.length != other.values.length) throw new Exception(s"Can't compare: $this $other")
+      if (this.values.length != other.values.length)
+        throw new Exception(s"Can't compare: $this $other")
       var i = 0
       var sumOfSquares = 0.0f
       while (i < this.values.length) {
