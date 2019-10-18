@@ -7,10 +7,7 @@ import io.ginger.kdtrey5.data._
 import skiis2.Skiis
 import java.util.concurrent.atomic.AtomicInteger
 
-case class RangeFindStats(
-  branchesRetrieved: Int,
-  leavesRetrieved: Int
-)
+case class RangeFindStats(branchesRetrieved: Int, leavesRetrieved: Int)
 
 trait RangeFindResult[K, V] {
   val values: Skiis[(K, V)]
@@ -47,7 +44,11 @@ trait KDTree {
   val store: KVStore[K, V]
 
   /** Find all existing points within `distance` of the given `point */
-  def rangeFind(target: Point, distance: Distance)(implicit skiisContext: Skiis.Context): RangeFindResult[K, V] = {
+  def rangeFind(
+    target: Point,
+    distance: Distance
+  )(implicit skiisContext: Skiis.Context
+  ): RangeFindResult[K, V] = {
     val branchesRetrieved = new AtomicInteger(0)
     val leavesRetrieved = new AtomicInteger(0)
 
@@ -77,8 +78,8 @@ trait KDTree {
             var pos = 0
             while (pos < branch.keys.length && branch.keys(pos) != null) {
               val p_current = branch.keys(pos)
-              val hasFollowing = (pos < branch.keys.length-1 && branch.keys(pos+1) != null)
-              val p_next = if (hasFollowing) branch.keys(pos+1) else branch.lastKey
+              val hasFollowing = (pos < branch.keys.length - 1 && branch.keys(pos + 1) != null)
+              val p_next = if (hasFollowing) branch.keys(pos + 1) else branch.lastKey
               //debug(s"findNext() p_current $p_current")
 
               if (coords.within(target, p_current, p_next, distance)) {
@@ -107,7 +108,7 @@ trait KDTree {
         case e: Exception => e.printStackTrace(); throw e
       }
     })(skiisContext)
-    new RangeFindResult[K, V]  {
+    new RangeFindResult[K, V] {
       override val values = results
       override def stats = RangeFindStats(branchesRetrieved.get, leavesRetrieved.get)
     }
@@ -119,7 +120,7 @@ trait KDTree {
   private def debug(s: String) = {
     println(s)
   }
-  */
+ */
 }
 
 /** A KD-Tree using a bitset-based coordinate system */

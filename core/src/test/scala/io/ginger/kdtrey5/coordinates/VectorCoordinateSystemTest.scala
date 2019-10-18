@@ -9,6 +9,7 @@ class VectorCoordinateSystemTest extends FunSuite {
   import VectorCoordinateSystem._
 
   def point(t: (Long, Long)) = VectorPoint(Array(t._1, t._2))
+
   def within(target: (Long, Long), p1: (Long, Long), p2: (Long, Long), distance: Float) = {
     VectorCoordinateSystem.within(point(target), point(p1), point(p2), VectorDistance(distance))
   }

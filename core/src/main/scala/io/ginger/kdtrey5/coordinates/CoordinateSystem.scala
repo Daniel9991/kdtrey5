@@ -12,6 +12,7 @@ trait CoordinateSystem {
 
   /** A point in multi-dimensional space. */
   trait Point {
+
     /** Returns the distance between this point and another point */
     def |-|(other: POINT): DISTANCE
   }

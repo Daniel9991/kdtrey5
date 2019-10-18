@@ -46,7 +46,13 @@ trait KDTreeBuilder {
    *
    *   Overall the algorithm should be rather efficient on a scale-out architecture.
    */
-  def build[K, V](input: Dataset[(K, V)], fanout: Int)(implicit ordering: Ordering[K], ktag: ClassTag[K], vtag: ClassTag[V]): KDTreeData[K, V] = {
+  def build[K, V](
+    input: Dataset[(K, V)],
+    fanout: Int
+  )(implicit ordering: Ordering[K],
+    ktag: ClassTag[K],
+    vtag: ClassTag[V]
+  ): KDTreeData[K, V] = {
     type N = KDNode[K, V]
     var current = KVDataset(input).sortByKey
     var result = newDataset[KDNode[K, V]]()
@@ -54,7 +60,7 @@ trait KDTreeBuilder {
     var level = 0
 
     //debug("Generate leaves...")
-    var branches = current.mapPartitions( (partition: Int, partitions: Int) => {
+    var branches = current.mapPartitions((partition: Int, partitions: Int) => {
       //debug(s"mapPartitions leaves partition=$partition")
       val idGenerator = new PartitionIdGenerator(partition, partitions)
       new PartitionMapper[(K, V), N] {
@@ -63,22 +69,22 @@ trait KDTreeBuilder {
           var keys = new Array[K](fanout)
           var values = new Array[V](fanout)
           while (iter.hasNext) {
-              if (size >= fanout) {
-                // emit full leaf
-                val id = s"Leaf#${partition}-${idGenerator.next()}"
-                append(KDLeaf(id, keys, values, size))
-                //debug(s"Append: ${KDLeaf(id, keys, values, size)}")
+            if (size >= fanout) {
+              // emit full leaf
+              val id = s"Leaf#${partition}-${idGenerator.next()}"
+              append(KDLeaf(id, keys, values, size))
+              //debug(s"Append: ${KDLeaf(id, keys, values, size)}")
 
-                // reset accumulators
-                size = 0
-                keys = new Array[K](fanout)
-                values = new Array[V](fanout)
-              }
+              // reset accumulators
+              size = 0
+              keys = new Array[K](fanout)
+              values = new Array[V](fanout)
+            }
 
-              val (key, value) = iter.next()
-              keys(size) = key
-              values(size) = value
-              size += 1
+            val (key, value) = iter.next()
+            keys(size) = key
+            values(size) = value
+            size += 1
           }
           if (size > 0) {
             // emit partially filled leaf
@@ -95,7 +101,7 @@ trait KDTreeBuilder {
 
     //debug(s"Generate branches level $level ...")
     while (branches.size > 1) {
-      branches = branches.mapPartitions( (partition: Int, partitions: Int) => {
+      branches = branches.mapPartitions((partition: Int, partitions: Int) => {
         //debug(s"mapPartitions branches level=$level partition=$partition")
         val idGenerator = new PartitionIdGenerator(partition, partitions)
         new PartitionMapper[N, KDBranch[K, V]] {
@@ -148,8 +154,7 @@ object KDTreeBuilder {
   case class KDTreeData[K, V](
     rootId: NodeId,
     nodes: Dataset[KDNode[K, V]],
-    nodesPerLevel: Seq[Long]
-  ) {
+    nodesPerLevel: Seq[Long]) {
 
     /** Store the KDTree data into a Key-Value store */
     def store(store: KVStore[K, V]): Unit = {
@@ -162,6 +167,7 @@ object KDTreeBuilder {
 
   private[kdtrey5] class PartitionIdGenerator(val partition: Int, val partitions: Int) {
     var _id: Long = partition
+
     def next(): Long = {
       val next = _id
       _id += partitions
@@ -176,6 +182,6 @@ object KDTreeBuilder {
   private def debug(s: String) = {
     println(s)
   }
-  */
+ */
 
 }

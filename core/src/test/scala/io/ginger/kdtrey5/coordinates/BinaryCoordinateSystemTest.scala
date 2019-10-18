@@ -26,7 +26,8 @@ class BinaryCoordinateSystemTest extends FunSuite {
       pointFromBinaryString(target),
       pointFromBinaryString(p1),
       pointFromBinaryString(p2),
-      BitsetDistance(distance))
+      BitsetDistance(distance)
+    )
   }
 
   test("within") {
@@ -49,7 +50,7 @@ class BinaryCoordinateSystemTest extends FunSuite {
       "010010101100110100100101011100001001111001010000010000000110100100011100000110111000011111000110011100100110001111011001001110",
       "111111100001010000001001100111100000000000110011101011101100001011000111101100110011111001101010000011001101111110000101001100",
       "111111100011100010001110011000000100011011100000101101111001101111110000011110111010001001111011100111101111010001000010110011",
-    // 1 23 4  67
+      // 1 23 4  67
       6
     ) shouldBe true
 
@@ -57,7 +58,7 @@ class BinaryCoordinateSystemTest extends FunSuite {
       "0100101011001",
       "1111111000010",
       "1111111000111",
-    // 1 23 4  56
+      // 1 23 4  56
       6
     ) shouldBe true
 
@@ -65,7 +66,7 @@ class BinaryCoordinateSystemTest extends FunSuite {
       "0100101011001",
       "1111111000010",
       "1111111000111",
-    // 1 23 4  567!
+      // 1 23 4  567!
       5
     ) shouldBe false
   }
@@ -81,5 +82,5 @@ class BinaryCoordinateSystemTest extends FunSuite {
     }
     distance("01001", "010001", "00011") shouldBe 0
   }
-  */
+ */
 }

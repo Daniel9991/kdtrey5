@@ -11,7 +11,6 @@ import scala.reflect.ClassTag
 import java.util.{BitSet, Random}
 import skiis2.Skiis
 
-
 class KDTreeTest extends FunSuite {
   import BitsetCoordinateSystem._
   import VectorCoordinateSystem._
@@ -41,26 +40,28 @@ class KDTreeTest extends FunSuite {
   }
 
   def randomRange(low: Int, high: Int)(implicit random: Random): Int = {
-    (math.abs(random.nextInt()) % (high-low)) + low
+    (math.abs(random.nextInt()) % (high - low)) + low
   }
 
   test("deterministic") {
     implicit val random = new Random(1339L)
     val points: Seq[(BitsetPoint, String)] =
-      (1 to 14).map { i => generateRandomBits(len = 6) -> s"value-$i" }
+      (1 to 14).map { i =>
+        generateRandomBits(len = 6) -> s"value-$i"
+      }
     val kddata = builder.build(InMemoryDataset(points), fanout = 2)
     val kdstore = new InMemoryKVStore[BitsetPoint, String]()
     kddata.store(kdstore)
     val kdtree = new BitsetKDTree {
       override type V = String
-      override val store: KVStore[K,V] = kdstore
+      override val store: KVStore[K, V] = kdstore
     }
     val target = generateRandomBits(len = 6)
     /*
     debug("points")
     points foreach { p => debug(p.toString) }
     debug(s"target: $target")
-    */
+     */
     val results = kdtree.rangeFind(target, distance = BitsetDistance(2)).values.force()
     val expectedPoints = points
       .filter { case (p, value) => (p |-| target) <= BitsetDistance(2) }
@@ -77,14 +78,17 @@ class KDTreeTest extends FunSuite {
     var totalResults = 0L
     for (i <- 1 to 20) {
       //debug(s"iteration $i")
-      val bitlen = 128// randomRange(96, 128)
+      val bitlen = 128 // randomRange(96, 128)
       //debug(s"bitlen $bitlen")
       val fanout = 2 //randomRange(2, 2)
       //debug(s"fanout $fanout")
       val combinations = BigInt(2).pow(bitlen) //math.pow(2, bitlen).toLong
       debug(s"combinations ${combinations}")
       val points: Seq[(BitsetPoint, String)] =
-        (1 to randomRange(32000, 256000)).map { i => generateRandomBits(bitlen) }
+        (1 to randomRange(32000, 256000))
+          .map { i =>
+            generateRandomBits(bitlen)
+          }
           .sorted
           .zipWithIndex
           .map { case (p, index) => p -> s"value-$index" }
@@ -95,29 +99,33 @@ class KDTreeTest extends FunSuite {
       kddata.store(kdstore)
       val kdtree = new BitsetKDTree {
         override type V = String
-        override val store: KVStore[K,V] = kdstore
+        override val store: KVStore[K, V] = kdstore
       }
 
       val target = generateRandomBits(bitlen)
       //debug(s"target $target")
 
-      val maxDistance = BitsetDistance(3 /*randomRange(2, 6) */)
+      val maxDistance = BitsetDistance(3 /*randomRange(2, 6) */ )
       //debug(s"maxDistance $maxDistance")
 
       val rangeFindResult = kdtree.rangeFind(target, maxDistance)
       val result = rangeFindResult.values.force().sorted
       totalNodesVisited += (rangeFindResult.stats.branchesRetrieved + rangeFindResult.stats.leavesRetrieved)
-      val expectedPoints = points
-        .filter { case (p, value) => (p |-| target) <= maxDistance }
-        .sorted
+      val expectedPoints = points.filter { case (p, value) => (p |-| target) <= maxDistance }.sorted
       if (result != expectedPoints) {
         debug(s"points ${points.size}")
-        points foreach { p => debug(p.toString) }
+        points foreach { p =>
+          debug(p.toString)
+        }
         debug(s"target: $target")
         debug(s"result ${result.size}")
-        result foreach { p => debug(p.toString) }
+        result foreach { p =>
+          debug(p.toString)
+        }
         debug(s"expected ${expectedPoints.size}")
-        expectedPoints foreach { p => debug(p.toString) }
+        expectedPoints foreach { p =>
+          debug(p.toString)
+        }
         for (i <- 0 until result.size) {
           result(i) shouldBe expectedPoints(i)
         }
@@ -136,10 +144,8 @@ class KDTreeTest extends FunSuite {
 
   test("selectivity") {
     val points: Seq[(VectorPoint, String)] =
-      for (
-        x <- 1 to 5;
-        y <- 1 to 5
-      ) yield (VectorPoint(Array(x, y)), (x, y).toString)
+      for (x <- 1 to 5;
+           y <- 1 to 5) yield (VectorPoint(Array(x, y)), (x, y).toString)
     val kddata = builder.build(InMemoryDataset(points), fanout = 2)
     kddata.nodesPerLevel shouldBe Seq(13, 7, 4, 2, 1)
 
@@ -147,7 +153,7 @@ class KDTreeTest extends FunSuite {
     kddata.store(kdstore)
     val kdtree = new VectorKDTree {
       override type V = String
-      override val store: KVStore[K,V] = kdstore
+      override val store: KVStore[K, V] = kdstore
     }
     val target = VectorPoint(Array(1, 2))
     val r2 = kdtree.rangeFind(target, distance = VectorDistance(2))

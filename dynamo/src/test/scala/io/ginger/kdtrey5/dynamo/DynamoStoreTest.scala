@@ -14,7 +14,8 @@ class DynamoStoreTest extends FunSuite {
     id = "root",
     keys = Array(BitSetUtils.bitSetFromString("1011")),
     values = Array("11"),
-    size = 1)
+    size = 1
+  )
 
   test("create tables") {
     val store = new TestStore()

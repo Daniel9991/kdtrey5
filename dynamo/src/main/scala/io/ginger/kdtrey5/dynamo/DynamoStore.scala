@@ -69,7 +69,8 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
       nodes = Seq.empty,
       lastKey = None,
       values = Seq.empty,
-      size = 1)
+      size = 1
+    )
     Scanamo(dynamo).exec(nodes.put(newNode))
   }
 
@@ -86,7 +87,8 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
       KDBranch(
         id = node.id,
         keys = node.keys.map(keyCodec.decode).toArray,
-        lastKey = if (node.lastKey.isDefined) keyCodec.decode(node.lastKey.get) else null.asInstanceOf[K],
+        lastKey =
+          if (node.lastKey.isDefined) keyCodec.decode(node.lastKey.get) else null.asInstanceOf[K],
         nodes = node.nodes.toArray,
         size = node.size
       )
@@ -102,7 +104,8 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
           lastKey = None,
           nodes = Seq.empty,
           values = leaf.values.filter(_ != null).map(valueCodec.encode),
-          size = node.size)
+          size = node.size
+        )
       case branch: KDBranch[K, V] =>
         Node(
           id = id,
@@ -110,7 +113,8 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
           lastKey = if (node.lastKey != null) Some(keyCodec.encode(node.lastKey)) else None,
           nodes = branch.nodes.filter(_ != null),
           values = Seq.empty,
-          size = node.size)
+          size = node.size
+        )
     }
     Scanamo(dynamo).exec(nodes.put(newNode))
   }
@@ -120,10 +124,12 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
     if (tableExists(tableName)) return
     val request = new CreateTableRequest()
       .withTableName(tableName)
-      .withKeySchema(
-        new KeySchemaElement().withAttributeName("version").withKeyType(KeyType.HASH))
+      .withKeySchema(new KeySchemaElement().withAttributeName("version").withKeyType(KeyType.HASH))
       .withAttributeDefinitions(
-        new AttributeDefinition().withAttributeName("version").withAttributeType(ScalarAttributeType.S))
+        new AttributeDefinition()
+          .withAttributeName("version")
+          .withAttributeType(ScalarAttributeType.S)
+      )
       .withProvisionedThroughput(new ProvisionedThroughput(1, 1))
     dynamo.createTable(request)
     waitForTableReady(tableName)
@@ -133,10 +139,10 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
     val tableName = s"$baseTableName-$version"
     val request = new CreateTableRequest()
       .withTableName(tableName)
-      .withKeySchema(
-        new KeySchemaElement().withAttributeName("id").withKeyType(KeyType.HASH))
+      .withKeySchema(new KeySchemaElement().withAttributeName("id").withKeyType(KeyType.HASH))
       .withAttributeDefinitions(
-        new AttributeDefinition().withAttributeName("id").withAttributeType(ScalarAttributeType.S))
+        new AttributeDefinition().withAttributeName("id").withAttributeType(ScalarAttributeType.S)
+      )
       .withProvisionedThroughput(new ProvisionedThroughput(1, 1))
     val result = dynamo.createTable(request)
     waitForTableReady(tableName)

@@ -16,7 +16,9 @@ class PartitionedDataset[T](val datasets: Seq[Dataset[T]]) extends Dataset[T] {
     new PartitionedDataset(datasets map (_ flatmap f))
   }
   override def mapPartitions[TT >: T, U](f: (Int, Int) => PartitionMapper[TT, U]): Dataset[U] = {
-    val newDatasets = datasets.zipWithIndex map { case (ds, index) => ds.mapPartition(f(index, datasets.size)) }
+    val newDatasets = datasets.zipWithIndex map {
+      case (ds, index) => ds.mapPartition(f(index, datasets.size))
+    }
     new PartitionedDataset(newDatasets)
   }
   override def mapPartition[U](f: PartitionMapper[T, U]): Dataset[U] = {

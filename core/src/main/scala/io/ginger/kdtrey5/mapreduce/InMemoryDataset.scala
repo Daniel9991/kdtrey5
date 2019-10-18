@@ -37,6 +37,6 @@ class InMemoryDataset[T](iter: => Iterable[T]) extends Dataset[T] {
   }
   override def size: Long = _iter.size
   override def append[TT >: T](ds: Dataset[TT]): Dataset[TT] = {
-    new PartitionedDataset({Seq(this, ds)})
+    new PartitionedDataset({ Seq(this, ds) })
   }
 }

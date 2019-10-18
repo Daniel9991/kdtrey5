@@ -15,9 +15,10 @@ case class KDBranch[K, V](
   val keys: Array[K],
   val lastKey: K,
   val nodes: Array[NodeId],
-  val size: Int
-) extends KDNode[K, V] {
-  override def toString = s"KDBranch($id, keys=${keys.mkString("{",",","}")}, lastKey=$lastKey, nodes=${nodes.mkString("{",",","}")}, size=$size)"
+  val size: Int)
+    extends KDNode[K, V] {
+  override def toString =
+    s"KDBranch($id, keys=${keys.mkString("{", ",", "}")}, lastKey=$lastKey, nodes=${nodes.mkString("{", ",", "}")}, size=$size)"
   override def equals(other: Any): Boolean = {
     other match {
       case other: KDBranch[K, V] =>
@@ -31,14 +32,11 @@ case class KDBranch[K, V](
   }
 }
 
-case class KDLeaf[K, V](
-  val id: NodeId,
-  val keys: Array[K],
-  val values: Array[V],
-  val size: Int
-) extends KDNode[K, V] {
+case class KDLeaf[K, V](val id: NodeId, val keys: Array[K], val values: Array[V], val size: Int)
+    extends KDNode[K, V] {
   override def lastKey: K = lastNotNull(keys)
-  override def toString = s"KDLeaf($id, keys=${keys.mkString("{",",","}")}, values=${values.mkString("{",",","}")}, size=$size)"
+  override def toString =
+    s"KDLeaf($id, keys=${keys.mkString("{", ",", "}")}, values=${values.mkString("{", ",", "}")}, size=$size)"
   override def equals(other: Any): Boolean = {
     other match {
       case other: KDLeaf[K, V] =>
