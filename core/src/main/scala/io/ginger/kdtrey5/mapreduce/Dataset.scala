@@ -6,6 +6,8 @@ import scala.collection._
  * A minimal abstraction over Spark's distributed computing facilities.
  */
 trait Dataset[+T] {
+  def cache(): Unit
+  def count(): Long = size
   def filter(f: T => Boolean): Dataset[T]
   def map[U](f: T => U): Dataset[U]
   def flatmap[U](f: T => Iterator[U]): Dataset[U]
@@ -20,4 +22,3 @@ trait Dataset[+T] {
 trait PartitionMapper[-T, U] {
   def mapPartition(iter: Iterator[T], append: U => Unit): Unit
 }
-

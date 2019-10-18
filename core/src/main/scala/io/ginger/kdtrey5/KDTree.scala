@@ -57,15 +57,15 @@ trait KDTree {
     }
 
     // backpressure happens through queue created in `parMapWithQueue`
-    val positions = new Skiis.Queue[Node](Int.MaxValue, maxAwaiting = skiisContext.parallelism)
+    val nodeQueue = new Skiis.Queue[Node](Int.MaxValue, maxAwaiting = skiisContext.parallelism)
 
     // start at the root of the tree
     val root = store.load(store.rootId)
     updateStats(root)
-    positions += root
+    nodeQueue += root
 
     /** implements a depth-first range search */
-    val results = positions.parMapWithQueue[(Point, V)]((node, values) => {
+    val results = nodeQueue.parMapWithQueue[(Point, V)]((node, values) => {
       try {
         //debug(s"findNext() target=$target distance=$distance")
         //debug(s"findNext() current node ${node.id}")
@@ -77,25 +77,15 @@ trait KDTree {
             var pos = 0
             while (pos < branch.keys.length && branch.keys(pos) != null) {
               val p_current = branch.keys(pos)
+              val hasFollowing = (pos < branch.keys.length-1 && branch.keys(pos+1) != null)
+              val p_next = if (hasFollowing) branch.keys(pos+1) else branch.lastKey
               //debug(s"findNext() p_current $p_current")
 
-              val possiblyWithinRange = {
-                // need a valid next node to compute common prefix
-                if (pos < branch.keys.length-1 && branch.keys(pos+1) != null) {
-                  val p_next = branch.keys(pos+1)
-                  val commonPrefix = coords.commonPrefixFromPoints(p_current, p_next)
-                  //debug(s"findNext() p_next $p_next")
-                  //debug(s"findNext() commonPrefix $commonPrefix")
-                  //debug(s"findNext() minDistance ${coords.distance(target, commonPrefix)}")
-                  (coords.distance(target, commonPrefix) <= distance)
-                } else true
-              }
-
-              if (possiblyWithinRange) {
-                //debug(s"possiblyWithinRange")
+              if (coords.within(target, p_current, p_next, distance)) {
                 val child = store.load(branch.nodes(pos))
+                //debug(s"enqueue: ${child}")
                 updateStats(child)
-                positions += child
+                nodeQueue += child
               }
 
               pos += 1
@@ -106,7 +96,7 @@ trait KDTree {
             var pos = 0
             while (pos < leaf.keys.length && leaf.keys(pos) != null) {
               val p_current = leaf.keys(pos)
-              if (coords.distance(target, p_current) <= distance) {
+              if ((target |-| p_current) <= distance) {
                 //debug(s"findNext() leaf push ${(p_current, leaf.values(pos))}")
                 values += (p_current, leaf.values(pos))
               }
@@ -136,4 +126,9 @@ trait KDTree {
 trait BitsetKDTree extends KDTree {
   override type COORDS = BitsetCoordinateSystem.type
   override val coords = BitsetCoordinateSystem
+}
+
+trait VectorKDTree extends KDTree {
+  override type COORDS = VectorCoordinateSystem.type
+  override val coords = VectorCoordinateSystem
 }

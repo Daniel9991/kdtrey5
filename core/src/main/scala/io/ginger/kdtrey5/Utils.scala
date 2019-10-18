@@ -13,4 +13,13 @@ object Utils {
     }
     return true
   }
+
+  private [kdtrey5] def lastNotNull[T](a: Array[T]): T = {
+    var i = a.length - 1
+    while (i >= 0) {
+      if (a(i) != null) return a(i)
+      i -= 1
+    }
+    null.asInstanceOf[T]
+  }
 }

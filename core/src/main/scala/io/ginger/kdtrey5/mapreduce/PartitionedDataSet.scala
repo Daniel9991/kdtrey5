@@ -3,6 +3,9 @@ package io.ginger.kdtrey5.mapreduce
 import scala.collection._
 
 class PartitionedDataset[T](val datasets: Seq[Dataset[T]]) extends Dataset[T] {
+  override def cache(): Unit = {
+    datasets foreach { _.cache() }
+  }
   override def filter(f: T => Boolean): Dataset[T] = {
     new PartitionedDataset(datasets map (_ filter f))
   }

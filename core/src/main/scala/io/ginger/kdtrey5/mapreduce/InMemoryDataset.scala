@@ -8,6 +8,9 @@ object InMemoryDataset {
 
 class InMemoryDataset[T](iter: => Iterable[T]) extends Dataset[T] {
   private lazy val _iter = iter
+  override def cache(): Unit = {
+    _iter.toSeq
+  }
   override def filter(f: T => Boolean): Dataset[T] = {
     new InMemoryDataset(_iter filter f)
   }
