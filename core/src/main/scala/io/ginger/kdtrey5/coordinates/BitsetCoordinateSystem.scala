@@ -2,6 +2,13 @@ package io.ginger.kdtrey5.coordinates
 
 import java.util.BitSet
 
+/**
+ * An arbitrary-length binary (biset-based) coordinate system.
+ *
+ * e.g. points can be expressed as `011011101`, `10111011`, etc.
+ *
+ * Distance is defined as the Hamming Distance (https://en.wikipedia.org/wiki/Hamming_distance) between two points.
+ */
 object BitsetCoordinateSystem extends CoordinateSystem {
   type DISTANCE = BitsetDistance
   type POINT = BitsetPoint
@@ -112,5 +119,4 @@ object BitsetCoordinateSystem extends CoordinateSystem {
     }) {}
     return (d <= distance.value)
   }
-
 }

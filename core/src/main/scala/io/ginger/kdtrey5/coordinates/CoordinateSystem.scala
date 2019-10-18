@@ -2,19 +2,17 @@ package io.ginger.kdtrey5.coordinates
 
 import java.util.BitSet
 
-/** A coordinate system defines
+/** A coordinate system defines:
  *    1) points within a multi-dimensional space,
  *    2) a means to compute distance between those points, and
- *    3) a means to compute common "prefix" between different points,
- *       (based on a definition of most-significant dimensions)
- *       which is expressed as a common plane between those points
- *       (though possibly void, or having zero dimensions)
+ *    3) a means to compare and order distances
+ *    4) a means to compute whether a given point falls within two other ordered points
  */
 trait CoordinateSystem {
-  // marker traits
 
-  /** A point in multi-dimensional space; defines values for each of the dimensions. */
+  /** A point in multi-dimensional space. */
   trait Point {
+    /** Returns the distance between this point and another point */
     def |-|(other: POINT): DISTANCE
   }
 
@@ -25,5 +23,8 @@ trait CoordinateSystem {
   type POINT <: Point
   type DISTANCE <: Distance
 
+  /** Returns true if a `target` point potentially falls between the range of ordered points `p1` and `p2` or within
+   *  `distance` range of either of them.
+   */
   def within(target: POINT, p1: POINT, p2: POINT, distance: DISTANCE): Boolean
 }
