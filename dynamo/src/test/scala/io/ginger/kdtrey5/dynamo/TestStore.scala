@@ -9,10 +9,10 @@ class TestStore extends DynamoStore[BitSet, String] {
   import BitSetUtils._
 
   override val baseTableName: String = "dummy"
-  override val dynamo = LocalDynamoDB.client()
+  override val dynamo = LocalDynamoDB.syncClient()
 
-  override implicit val kClassTag = ClassTag(classOf[BitSet])
-  override implicit val vClassTag = ClassTag(classOf[String])
+  override implicit val kClassTag: ClassTag[BitSet] = ClassTag(classOf[BitSet])
+  override implicit val vClassTag: ClassTag[String] = ClassTag(classOf[String])
 
   override val keyCodec = new Codec[BitSet, NodeId] {
     override def encode(bits: BitSet): String = bitSetToString(bits)

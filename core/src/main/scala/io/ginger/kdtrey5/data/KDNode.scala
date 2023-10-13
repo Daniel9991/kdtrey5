@@ -21,7 +21,7 @@ case class KDBranch[K, V](
     s"KDBranch($id, keys=${keys.mkString("{", ",", "}")}, lastKey=$lastKey, nodes=${nodes.mkString("{", ",", "}")}, size=$size)"
   override def equals(other: Any): Boolean = {
     other match {
-      case other: KDBranch[K, V] =>
+      case other: KDBranch[K, V] @unchecked =>
         this.id == other.id &&
           this.size == other.size &&
           this.lastKey == other.lastKey &&
@@ -39,7 +39,7 @@ case class KDLeaf[K, V](val id: NodeId, val keys: Array[K], val values: Array[V]
     s"KDLeaf($id, keys=${keys.mkString("{", ",", "}")}, values=${values.mkString("{", ",", "}")}, size=$size)"
   override def equals(other: Any): Boolean = {
     other match {
-      case other: KDLeaf[K, V] =>
+      case other: KDLeaf[K, V] @unchecked =>
         this.id == other.id &&
           this.size == other.size &&
           arrayEquals(this.keys, other.keys, size) &&

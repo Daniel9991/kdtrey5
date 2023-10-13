@@ -21,7 +21,7 @@ object BitsetCoordinateSystem extends CoordinateSystem {
     }
   }
 
-  implicit val bitsetOrdering = new Ordering[POINT] {
+  implicit val bitsetOrdering: Ordering[POINT] = new Ordering[POINT] {
     override def compare(x: BitsetPoint, y: BitsetPoint): Int = {
       if (x.length != y.length) throw new Exception("Cannot compare points of different lengths")
       var pos = x.length - 1

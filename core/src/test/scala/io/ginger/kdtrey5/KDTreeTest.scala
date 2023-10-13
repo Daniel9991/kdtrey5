@@ -4,18 +4,18 @@ import io.ginger.kdtrey5.data._
 import io.ginger.kdtrey5.mapreduce._
 import io.ginger.kdtrey5.coordinates._
 
-import org.scalatest._
-import org.scalatest.Matchers._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers._
 
 import scala.reflect.ClassTag
 import java.util.{BitSet, Random}
 import skiis2.Skiis
 
-class KDTreeTest extends FunSuite {
+class KDTreeTest extends AnyFunSuite {
   import BitsetCoordinateSystem._
   import VectorCoordinateSystem._
 
-  implicit val skiisContext = new Skiis.Context {
+  implicit val skiisContext: Skiis.Context = new Skiis.Context {
     override final val parallelism = 1
     override final val queue = 100 // must be > KDTree fanout
     override final val batch = 1

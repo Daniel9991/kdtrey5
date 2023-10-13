@@ -1,11 +1,11 @@
 package io.ginger.kdtrey5.coordinates
 
-import org.scalatest._
-import org.scalatest.Matchers._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers._
 import io.ginger.kdtrey5.coordinates.VectorCoordinateSystem.VectorPoint
 import org.scalactic.TolerantNumerics
 
-class VectorCoordinateSystemTest extends FunSuite {
+class VectorCoordinateSystemTest extends AnyFunSuite {
   import VectorCoordinateSystem._
 
   def point(t: (Long, Long)) = VectorPoint(Array(t._1, t._2))

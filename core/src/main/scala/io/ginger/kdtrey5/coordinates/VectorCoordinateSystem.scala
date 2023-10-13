@@ -21,7 +21,7 @@ object VectorCoordinateSystem extends CoordinateSystem {
     }
   }
 
-  implicit val vectorOrdering = new Ordering[POINT] {
+  implicit val vectorOrdering: Ordering[POINT] = new Ordering[POINT] {
     override def compare(x: VectorPoint, y: VectorPoint): Int = {
       val a1 = x.values
       val a2 = y.values

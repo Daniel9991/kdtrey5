@@ -3,10 +3,10 @@ package io.ginger.kdtrey5.dynamo
 import java.util.BitSet
 import io.ginger.kdtrey5.coordinates.BitsetCoordinateSystem
 import io.ginger.kdtrey5.data._
-import org.scalatest._
-import org.scalatest.Matchers._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers._
 
-class DynamoStoreTest extends FunSuite {
+class DynamoStoreTest extends AnyFunSuite {
 
   val prefix = "kdtrey5"
 

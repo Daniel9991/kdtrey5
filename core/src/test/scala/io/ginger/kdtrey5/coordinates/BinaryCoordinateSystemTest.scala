@@ -1,9 +1,9 @@
 package io.ginger.kdtrey5.coordinates
 
-import org.scalatest._
-import org.scalatest.Matchers._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers._
 
-class BinaryCoordinateSystemTest extends FunSuite {
+class BinaryCoordinateSystemTest extends AnyFunSuite {
   import BitsetCoordinateSystem._
 
   test("distance") {

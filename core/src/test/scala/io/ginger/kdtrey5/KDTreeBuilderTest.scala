@@ -3,12 +3,12 @@ package io.ginger.kdtrey5
 import io.ginger.kdtrey5.data._
 import io.ginger.kdtrey5.mapreduce._
 
-import org.scalatest._
-import org.scalatest.Matchers._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers._
 
 import scala.reflect.ClassTag
 
-class KDTreeBuilderTest extends FunSuite {
+class KDTreeBuilderTest extends AnyFunSuite {
 
   val builder = new KDTreeBuilder {
     override def newDataset[T](): Dataset[T] = InMemoryDataset(Iterable.empty)

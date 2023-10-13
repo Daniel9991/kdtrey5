@@ -1,19 +1,12 @@
 ThisBuild / organization := "io.ginger.kdtrey5"
 ThisBuild / version := "0.1.0-SNAPSHOT"
-ThisBuild / scalaVersion := "2.12.8"
+ThisBuild / scalaVersion := "2.13.12"
 
-/*
-lazy val kdtrey5 = (project in file("."))
-  .settings(
-    name := "kdtrey5",
-    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test,
-    mainClass in (Compile, run) := Some("io.ginger.kdtrey5.RecordManager")
-  )
- */
-
-val scalaTest = "org.scalatest" %% "scalatest" % "3.0.8" % Test
+val scalaTest = "org.scalatest" %% "scalatest" % "3.2.17" % Test
 
 val skiis = "org.alexboisvert" %% "skiis" % "2.0.2-SNAPSHOT"
+
+val awsDynamoDB = "software.amazon.awssdk" % "dynamodb" % "2.20.146"
 
 lazy val core = (project in file("core"))
   .settings(
@@ -24,8 +17,10 @@ lazy val core = (project in file("core"))
 lazy val dynamo = (project in file("dynamo"))
   .dependsOn(core)
   .settings(
-    libraryDependencies += "org.scanamo" %% "scanamo" % "1.0.0-M10",
-    libraryDependencies += "org.scanamo" %% "scanamo-testkit" % "1.0.0-M10" % Test,
+    libraryDependencies += awsDynamoDB,
+    libraryDependencies += "org.scanamo" %% "scanamo" % "1.0.0-M28",
+    libraryDependencies += "org.scanamo" %% "scanamo-testkit" % "1.0.0-M28" % Test,
+    libraryDependencies += "org.slf4j" % "slf4j-simple" % "2.0.9" % Test,
     libraryDependencies += scalaTest,
     dynamoDBLocalDownloadDir := file(".dynamodb-local"),
     dynamoDBLocalPort := 8042,

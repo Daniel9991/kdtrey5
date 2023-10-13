@@ -6,24 +6,23 @@ import io.ginger.kdtrey5.data._
 
 import org.scanamo._
 import org.scanamo.syntax._
-import org.scanamo.auto._
-import org.scanamo.error.DynamoReadError
 
 import cats._
 import cats.data.EitherT
 import cats.implicits._
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient
-import org.scanamo.error.ScanamoError
-import com.amazonaws.services.dynamodbv2.model.CreateTableRequest
-import com.amazonaws.services.dynamodbv2.model.KeySchemaElement
-import com.amazonaws.services.dynamodbv2.model.KeyType
-import com.amazonaws.services.dynamodbv2.model.AttributeDefinition
-import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync
-import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput
-import com.amazonaws.services.dynamodbv2.model.TableStatus
-import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException
+import org.scanamo.generic.auto._
+
+import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest
+import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement
+import software.amazon.awssdk.services.dynamodb.model.KeyType
+import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition
+import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType
+import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput
+import software.amazon.awssdk.services.dynamodb.model.TableStatus
+import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest
 
 object Helpers {
   def raise(e: ScanamoError) = throw new Exception(e.toString)
@@ -45,7 +44,7 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
 
   val baseTableName: String
 
-  protected val dynamo: AmazonDynamoDBAsync
+  protected val dynamo: DynamoDbClient
 
   lazy val versions = Table[Version](s"$baseTableName-versions")
 
@@ -59,7 +58,7 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
   }
 
   override def rootId: NodeId = {
-    Scanamo(dynamo).exec(nodes.get('id -> rootNodeIdKey)).get.fold(raise, _.keys.head)
+    Scanamo(dynamo).exec(nodes.get("id" -> rootNodeIdKey)).get.fold(raise _, _.keys.head)
   }
 
   override def rootId_=(id: NodeId): Unit = {
@@ -75,7 +74,7 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
   }
 
   override def load(id: NodeId): KDNode[K, V] = {
-    val node: Node = Scanamo(dynamo).exec(nodes.get('id -> id)).get.fold(raise, identity)
+    val node: Node = Scanamo(dynamo).exec(nodes.get("id" -> id)).get.fold(raise _, identity(_))
     if (node.values.nonEmpty) {
       KDLeaf(
         id = node.id,
@@ -122,28 +121,43 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
   def createVersionsTableIfNecessary(): Unit = {
     val tableName = s"$baseTableName-versions"
     if (tableExists(tableName)) return
-    val request = new CreateTableRequest()
-      .withTableName(tableName)
-      .withKeySchema(new KeySchemaElement().withAttributeName("version").withKeyType(KeyType.HASH))
-      .withAttributeDefinitions(
-        new AttributeDefinition()
-          .withAttributeName("version")
-          .withAttributeType(ScalarAttributeType.S)
+
+    val request = CreateTableRequest
+      .builder()
+      .tableName(tableName)
+      .keySchema(KeySchemaElement.builder.attributeName("version").keyType(KeyType.HASH).build())
+      .attributeDefinitions(
+        AttributeDefinition
+          .builder()
+          .attributeName("version")
+          .attributeType(ScalarAttributeType.S)
+          .build()
       )
-      .withProvisionedThroughput(new ProvisionedThroughput(1, 1))
+      .provisionedThroughput(
+        ProvisionedThroughput.builder().readCapacityUnits(1).writeCapacityUnits(1).build
+      )
+      .build()
     dynamo.createTable(request)
     waitForTableReady(tableName)
   }
 
   def createNewVersion(version: String): Unit = {
     val tableName = s"$baseTableName-$version"
-    val request = new CreateTableRequest()
-      .withTableName(tableName)
-      .withKeySchema(new KeySchemaElement().withAttributeName("id").withKeyType(KeyType.HASH))
-      .withAttributeDefinitions(
-        new AttributeDefinition().withAttributeName("id").withAttributeType(ScalarAttributeType.S)
+    val request = CreateTableRequest
+      .builder()
+      .tableName(tableName)
+      .keySchema(KeySchemaElement.builder.attributeName("id").keyType(KeyType.HASH).build())
+      .attributeDefinitions(
+        AttributeDefinition
+          .builder()
+          .attributeName("id")
+          .attributeType(ScalarAttributeType.S)
+          .build()
       )
-      .withProvisionedThroughput(new ProvisionedThroughput(1, 1))
+      .provisionedThroughput(
+        ProvisionedThroughput.builder().readCapacityUnits(1).writeCapacityUnits(1).build
+      )
+      .build()
     val result = dynamo.createTable(request)
     waitForTableReady(tableName)
     val newVersion = Version(version)
@@ -153,8 +167,9 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
   private def waitForTableReady(tableName: String): Unit = {
     var retriesLeft = 120
     while ({
-      val response = dynamo.describeTable(tableName)
-      (response.getTable.getTableStatus != TableStatus.ACTIVE.name) && (retriesLeft > 0)
+      val response = dynamo.describeTable(DescribeTableRequest.builder().tableName(tableName).build)
+      println(response)
+      (response.table.tableStatus != TableStatus.ACTIVE) && (retriesLeft > 0)
     }) {
       Thread.sleep(1000L)
       retriesLeft -= 1
@@ -166,7 +181,8 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
 
   private def tableExists(tableName: String): Boolean = {
     try {
-      val response = dynamo.describeTable(tableName)
+      val response =
+        dynamo.describeTable(DescribeTableRequest.builder().tableName(tableName).build())
       true
     } catch {
       case e: ResourceNotFoundException => false
