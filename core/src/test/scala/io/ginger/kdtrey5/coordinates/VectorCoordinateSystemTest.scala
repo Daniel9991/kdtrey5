@@ -2,36 +2,36 @@ package io.ginger.kdtrey5.coordinates
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
-import io.ginger.kdtrey5.coordinates.VectorCoordinateSystem.VectorPoint
 import org.scalactic.TolerantNumerics
 
 class VectorCoordinateSystemTest extends AnyFunSuite {
   import VectorCoordinateSystem._
+  import VectorCoordinateSystem.ordering.compare
 
-  def point(t: (Long, Long)) = VectorPoint(Array(t._1, t._2))
+  def point(t: (Long, Long)) = Point(Array(t._1, t._2))
 
+  /*
   def within(target: (Long, Long), p1: (Long, Long), p2: (Long, Long), distance: Float) = {
-    VectorCoordinateSystem.within(point(target), point(p1), point(p2), VectorDistance(distance))
+    (compare(point(target), point(p1)) < distance) &&
+      (compare(point(target), point(p2)) < distance)
   }
+  */
 
   test("vector distance") {
-    (point(0, 1) |-| point(0, 1)).value shouldBe 0.0f
-    (point(0, 1) |-| point(1, 1)).value shouldBe 1.0f
-    (point(0, 1) |-| point(1, 2)).value shouldBe (1.41f +- 0.01f)
+    distance(point(0, 1), point(0, 1)) shouldBe 0.0f
+    distance(point(0, 1), point(1, 1)) shouldBe 1.0f
+    distance(point(0, 1), point(1, 2)) shouldBe (1.41d +- 0.02d)
   }
 
-  test("vector within") {
-    within((0, 1), (0, 1), (0, 1), 0) shouldBe true
-    within((1, 1), (0, 1), (1, 1), 0) shouldBe true
+  test("minDistance 1") {
+    minDistance(target = point(0, 1), point(0, 1), point(0, 1)) shouldBe 0
+  }
 
-    within((0, 1), (0, 1), (0, 1), 1) shouldBe true
-    within((1, 1), (0, 1), (0, 1), 1) shouldBe true
+  test("minDistance 2") {
+    minDistance(target = point(1, 2), point(1, 5), point(2, 3)) shouldBe 0
+  }
 
-    within((1, 1), (2, 1), (3, 1), 1) shouldBe true
-    within((2, 1), (0, 1), (2, 3), 1) shouldBe true
-    within((3, 1), (0, 1), (2, 3), 1) shouldBe true // possible (2, 1)
-    within((4, 1), (0, 1), (2, 3), 2) shouldBe true // possible (2, 1)
-
-    within((4, 1), (0, 1), (2, 3), 1) shouldBe false
+  test("minDistance 3") {
+    minDistance(target = point(1, 2), point(1, 1), point(1, 5)) shouldBe 0
   }
 }

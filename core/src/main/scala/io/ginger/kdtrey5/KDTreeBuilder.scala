@@ -5,6 +5,7 @@ import scala.reflect.ClassTag
 
 import io.ginger.kdtrey5.data._
 import io.ginger.kdtrey5.mapreduce._
+import io.ginger.kdtrey5.coordinates.CoordinateSystem
 
 /**
  * Builder for KDTree's.
@@ -48,13 +49,13 @@ trait KDTreeBuilder {
    */
   def build[K, V](
     input: Dataset[(K, V)],
-    fanout: Int
-  )(implicit ordering: Ordering[K],
-    ktag: ClassTag[K],
+    fanout: Int,
+    coords: CoordinateSystem { type POINT = K }
+  )(implicit ktag: ClassTag[K],
     vtag: ClassTag[V]
   ): KDTreeData[K, V] = {
     type N = KDNode[K, V]
-    var current = KVDataset(input).sortByKey
+    var current = KVDataset(input).sortByKey(coords.ordering)
     var result = newDataset[KDNode[K, V]]()
     val nodesPerLevel = mutable.Buffer[Long]()
     var level = 0
@@ -72,7 +73,7 @@ trait KDTreeBuilder {
             if (size >= fanout) {
               // emit full leaf
               val id = s"Leaf#${partition}-${idGenerator.next()}"
-              append(KDLeaf(id, keys, values, size))
+              append(KDLeaf(id, keys, values))
               //debug(s"Append: ${KDLeaf(id, keys, values, size)}")
 
               // reset accumulators
@@ -89,7 +90,7 @@ trait KDTreeBuilder {
           if (size > 0) {
             // emit partially filled leaf
             val id = s"Leaf#${partition}-${idGenerator.next()}"
-            append(KDLeaf(id, keys, values, size))
+            append(KDLeaf(id, keys, values))
             //debug(s"Append: ${KDLeaf(id, keys, values, size)}")
           }
         }
@@ -107,32 +108,34 @@ trait KDTreeBuilder {
         new PartitionMapper[N, KDBranch[K, V]] {
           override def mapPartition(iter: Iterator[N], append: KDBranch[K, V] => Unit): Unit = {
             var size = 0
-            var keys = new Array[K](fanout)
             var nodes = new Array[NodeId](fanout)
+            var keys = new Array[K](fanout + 1)
             var lastKey: K = null.asInstanceOf[K]
             while (iter.hasNext) {
               val node = iter.next()
+              nodes(size) = node.id
               keys(size) = node.keys(0)
               lastKey = node.lastKey
-              nodes(size) = node.id
               size += 1
 
               if (size >= fanout) {
                 // emit full branch
                 val id = s"Branch#${level}-${partition}-${idGenerator.next()}"
-                append(KDBranch(id, keys, lastKey, nodes, size))
+                keys(size) = lastKey
+                append(KDBranch(id, nodes, keys))
                 //debug(s"Append: ${KDBranch(id, keys, nodes, size)}")
 
                 // reset accumulators
                 size = 0
-                keys = new Array[K](fanout)
+                keys = new Array[K](fanout + 1)
                 nodes = new Array[NodeId](fanout)
               }
             }
             if (size > 0) {
               // emit partially filled branch
               val id = s"Branch#${level}-${partition}-${idGenerator.next()}"
-              append(KDBranch(id, keys, lastKey, nodes, size))
+                keys(size) = lastKey
+                append(KDBranch(id, nodes, keys))
               //debug(s"Append: ${KDBranch(id, keys, nodes, size)}")
             }
           }

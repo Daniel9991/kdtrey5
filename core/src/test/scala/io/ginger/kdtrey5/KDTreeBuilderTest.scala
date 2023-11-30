@@ -7,8 +7,11 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
 
 import scala.reflect.ClassTag
+import io.ginger.kdtrey5.coordinates.VectorCoordinateSystem
+import io.ginger.kdtrey5.coordinates.VectorCoordinateSystem.Point
 
 class KDTreeBuilderTest extends AnyFunSuite {
+  def point(value: Int) = Point(Array(value))
 
   val builder = new KDTreeBuilder {
     override def newDataset[T](): Dataset[T] = InMemoryDataset(Iterable.empty)
@@ -16,32 +19,33 @@ class KDTreeBuilderTest extends AnyFunSuite {
 
   test("simple build") {
     val input = Seq(
-      "3" -> "three",
-      "2" -> "two",
-      "5" -> "five",
-      "4" -> "four",
-      "1" -> "one",
-      "7" -> "seven",
-      "6" -> "six",
-      "8" -> "eight",
-      "9" -> "nine"
-    )
-    val output = builder.build(InMemoryDataset(input), fanout = 2)
-    val expected: Set[KDNode[String, String]] = Set(
-      leaf("Leaf#0-0", "1" -> "one", "2" -> "two"),
-      leaf("Leaf#0-1", "3" -> "three", "4" -> "four"),
-      leaf("Leaf#0-2", "5" -> "five", "6" -> "six"),
-      leaf("Leaf#0-3", "7" -> "seven", "8" -> "eight"),
-      leaf("Leaf#0-4", "9" -> "nine"),
+      3 -> "three",
+      2 -> "two",
+      5 -> "five",
+      4 -> "four",
+      1 -> "one",
+      7 -> "seven",
+      6 -> "six",
+      8 -> "eight",
+      9 -> "nine"
+    ).map { case (key, value) => point(key) -> value}
+
+    val output = builder.build(InMemoryDataset(input), fanout = 2, VectorCoordinateSystem)
+    val expected: Set[KDNode[Point, String]] = Set(
+      leaf("Leaf#0-0", point(1) -> "one",   point(2) -> "two"),
+      leaf("Leaf#0-1", point(3) -> "three", point(4) -> "four"),
+      leaf("Leaf#0-2", point(5) -> "five",  point(6) -> "six"),
+      leaf("Leaf#0-3", point(7) -> "seven", point(8) -> "eight"),
+      leaf("Leaf#0-4", point(9) -> "nine"),
       // level 1
-      branch("Branch#1-0-0", "1" -> "Leaf#0-0", "3" -> "Leaf#0-1")(lastKey = "4"),
-      branch("Branch#1-0-1", "5" -> "Leaf#0-2", "7" -> "Leaf#0-3")(lastKey = "8"),
-      branch("Branch#1-0-2", "9" -> "Leaf#0-4")(lastKey = "9"),
+      branch("Branch#1-0-0", ("Leaf#0-0", 1), ("Leaf#0-1", 3))(lastKey = 4),
+      branch("Branch#1-0-1", ("Leaf#0-2", 5), ("Leaf#0-3", 7))(lastKey = 8),
+      branch("Branch#1-0-2", ("Leaf#0-4", 9))(lastKey = 9),
       // level 2
-      branch("Branch#2-0-0", "1" -> "Branch#1-0-0", "5" -> "Branch#1-0-1")(lastKey = "8"),
-      branch("Branch#2-0-1", "9" -> "Branch#1-0-2")(lastKey = "9"),
+      branch("Branch#2-0-0", ("Branch#1-0-0", 1), ("Branch#1-0-1", 5))(lastKey = 8),
+      branch("Branch#2-0-1", ("Branch#1-0-2", 9))(lastKey = 9),
       // level 3
-      branch("Branch#3-0-0", "1" -> "Branch#2-0-0", "9" -> "Branch#2-0-1")(lastKey = "9")
+      branch("Branch#3-0-0", ("Branch#2-0-0", 1), ("Branch#2-0-1", 9))(lastKey = 9)
     )
 
     //output.rootId shouldBe "Branch#3-0-0"
@@ -59,17 +63,14 @@ class KDTreeBuilderTest extends AnyFunSuite {
       id,
       keys = values.map(_._1).toArray,
       values = values.map(_._2).toArray,
-      size = values.size
     )
   }
 
-  def branch[K](id: String, values: (K, NodeId)*)(lastKey: K)(implicit ktag: ClassTag[K]) = {
-    KDBranch[K, String](
+  def branch(id: String, values: (NodeId, Int)*)(lastKey: Int) = {
+    KDBranch[Point, String](
       id,
-      keys = values.map(_._1).toArray,
-      lastKey = lastKey,
-      nodes = values.map(_._2).toArray,
-      size = values.size
+      nodes = values.map(_._1).toArray,
+      keys = (values.map(t => point(t._2)) :+ point(lastKey)).toArray,
     )
   }
 }

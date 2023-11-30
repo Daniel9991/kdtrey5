@@ -66,9 +66,7 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
       id = rootNodeIdKey,
       keys = Seq(id),
       nodes = Seq.empty,
-      lastKey = None,
-      values = Seq.empty,
-      size = 1
+      values = Seq.empty
     )
     Scanamo(dynamo).exec(nodes.put(newNode))
   }
@@ -79,17 +77,13 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
       KDLeaf(
         id = node.id,
         keys = node.keys.map(keyCodec.decode).toArray,
-        values = node.values.map(valueCodec.decode).toArray,
-        size = node.size
+        values = node.values.map(valueCodec.decode).toArray
       )
     } else {
       KDBranch(
         id = node.id,
         keys = node.keys.map(keyCodec.decode).toArray,
-        lastKey =
-          if (node.lastKey.isDefined) keyCodec.decode(node.lastKey.get) else null.asInstanceOf[K],
-        nodes = node.nodes.toArray,
-        size = node.size
+        nodes = node.nodes.toArray
       )
     }
   }
@@ -100,19 +94,15 @@ trait DynamoStore[K, V] extends KVStore[K, V] {
         Node(
           id = id,
           keys = node.keys.filter(_ != null).map(keyCodec.encode),
-          lastKey = None,
           nodes = Seq.empty,
           values = leaf.values.filter(_ != null).map(valueCodec.encode),
-          size = node.size
         )
       case branch: KDBranch[K, V] =>
         Node(
           id = id,
           keys = node.keys.filter(_ != null).map(keyCodec.encode),
-          lastKey = if (node.lastKey != null) Some(keyCodec.encode(node.lastKey)) else None,
           nodes = branch.nodes.filter(_ != null),
           values = Seq.empty,
-          size = node.size
         )
     }
     Scanamo(dynamo).exec(nodes.put(newNode))
@@ -195,7 +185,6 @@ case class Version(version: String)
 case class Node(
   id: NodeId,
   keys: Seq[String],
-  lastKey: Option[String],
   nodes: Seq[String],
   values: Seq[String],
-  size: Int)
+)

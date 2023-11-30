@@ -10,21 +10,12 @@ import java.util.BitSet
  * Distance is defined as the Hamming Distance (https://en.wikipedia.org/wiki/Hamming_distance) between two points.
  */
 object BitsetCoordinateSystem extends CoordinateSystem {
-  type DISTANCE = BitsetDistance
-  type POINT = BitsetPoint
+  override type POINT = BitsetPoint
 
-  case class BitsetDistance(value: Long) extends super.Distance {
-    override def compare(that: DISTANCE): Int = {
-      if (this.value > that.value) 1
-      else if (this.value == that.value) 0
-      else -1
-    }
-  }
-
-  implicit val bitsetOrdering: Ordering[POINT] = new Ordering[POINT] {
+  override val ordering: Ordering[BitsetPoint] = new Ordering[BitsetPoint] {
     override def compare(x: BitsetPoint, y: BitsetPoint): Int = {
       if (x.length != y.length) throw new Exception("Cannot compare points of different lengths")
-      var pos = x.length - 1
+      var pos = x.length - 1 // start with the most significant bit
       while (pos >= 0) {
         val xbit = x.bits.get(pos)
         val ybit = y.bits.get(pos)
@@ -36,15 +27,9 @@ object BitsetCoordinateSystem extends CoordinateSystem {
     }
   }
 
-  case class BitsetPoint(val bits: BitSet, val length: Int) extends super.Point {
+  case class BitsetPoint(val bits: BitSet, val length: Int) {
     override def toString = {
       s"BitsetPoint(${asBinaryString})"
-    }
-
-    override def |-|(other: POINT): DISTANCE = {
-      val xored = BitsetCoordinateSystem.clone(this.bits)
-      xored.xor(other.bits)
-      BitsetDistance(xored.cardinality())
     }
 
     def asBinaryString: String = {
@@ -62,6 +47,17 @@ object BitsetCoordinateSystem extends CoordinateSystem {
       bits.toByteArray
     }
   }
+
+  object BitsetPoint {
+    implicit val ordering: Ordering[BitsetPoint] = BitsetCoordinateSystem.ordering
+  }
+
+  override def distance(p1: BitsetPoint, p2: BitsetPoint): Distance = {
+    val xored = BitsetCoordinateSystem.clone(p1.bits)
+    xored.xor(p2.bits)
+    xored.cardinality()
+  }
+
 
   /** Create a BitsetPoint from a string, e.g. "01100111" */
   def pointFromBinaryString(bits: String): BitsetPoint = {
@@ -97,26 +93,28 @@ object BitsetCoordinateSystem extends CoordinateSystem {
     bs
   }
 
-  override def within(target: POINT, p1: POINT, p2: POINT, distance: DISTANCE): Boolean = {
-    var pos = target.length - 1
-    var d = 0
-    while ({
-      val tb = target.bits.get(pos)
-      val p1b = p1.bits.get(pos)
-      val p2b = p2.bits.get(pos)
-      if (p1b == p2b) {
-        if (tb != p1b) {
-          d += 1
-          if (d > distance.value) {
-            return false
-          }
+  override def minDistance(target: POINT, rangeMin: POINT, rangeMax: POINT): Distance = {
+    import BitsetPoint.ordering._
+
+    if (gteq(target, rangeMin) && lteq(target, rangeMax)) {
+      0.0d
+    } else {
+      var prefixDiff = 0.0d
+      var continue = true
+      var i = target.length - 1
+      while (continue) {
+        val tg = target.bits.get(i)
+        val min = rangeMin.bits.get(i)
+        val max = rangeMax.bits.get(i)
+        if (min == max) {
+          if (tg != min) prefixDiff += 1.0d
+        } else {
+          continue = false
         }
-      } else {
-        return (d <= distance.value)
+        i -= 1
+        continue &&= (i >= 0)
       }
-      pos -= 1
-      (pos >= 0)
-    }) {}
-    return (d <= distance.value)
+      math.min(1.0d + prefixDiff, math.min(distance(target, rangeMin), distance(target, rangeMax)))
+    }
   }
 }

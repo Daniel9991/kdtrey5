@@ -1,6 +1,7 @@
 package io.ginger.kdtrey5.coordinates
 
 import java.util.BitSet
+import io.ginger.kdtrey5.Utils.arrayEquals
 
 /**
  * An arbitrary-length vector coordinate system.
@@ -10,21 +11,36 @@ import java.util.BitSet
  * Distance is define as dot-product between two points.
  */
 object VectorCoordinateSystem extends CoordinateSystem {
-  type DISTANCE = VectorDistance
-  type POINT = VectorPoint
+  override type POINT = Point
 
-  case class VectorDistance(value: Float) extends super.Distance {
-    override def compare(that: DISTANCE): Int = {
-      if (this.value > that.value) 1
-      else if (this.value == that.value) 0
-      else -1
+  type Coordinate = Double
+
+  /** A point in multi-dimensional space. */
+  final case class Point(val coordinates: Array[Coordinate]) {
+    /** Implementation note:
+     *  Ideally this would be a 'value class', e.g., extends AnyVal
+     *  but for testing we want to test for equality and value classes
+     *  can't override equals(), and arrays don't natively compare by value
+     */
+    override def toString = {
+      s"Point(${coordinates.toSeq.mkString(",")})"
     }
+    override def equals(other: Any) = other match {
+      case other: Point =>
+        arrayEquals(this.coordinates, other.coordinates, coordinates.size)
+      case _ => false
+    }
+
   }
 
-  implicit val vectorOrdering: Ordering[POINT] = new Ordering[POINT] {
-    override def compare(x: VectorPoint, y: VectorPoint): Int = {
-      val a1 = x.values
-      val a2 = y.values
+  object Point {
+    implicit val ordering: Ordering[Point] = VectorCoordinateSystem.ordering
+  }
+
+  override val ordering: Ordering[Point] = new Ordering[Point] {
+    override def compare(x: Point, y: Point): Int = {
+      val a1 = x.coordinates
+      val a2 = y.coordinates
       if (a1.length != a2.length) throw new Exception("Cannot compare points of different lengths")
       var pos = 0
       while (pos < a1.length) {
@@ -38,68 +54,56 @@ object VectorCoordinateSystem extends CoordinateSystem {
     }
   }
 
-  case class VectorPoint(val values: Array[Long]) extends super.Point {
-    override def toString = {
-      s"VectorPoint(${values.toSeq.mkString(",")})"
+  override def distance(p1: Point, p2: Point): Distance = {
+    if (p1.coordinates.length != p2.coordinates.length)
+      throw new Exception(s"Can't compare: $p1 $p2")
+    var i = 0
+    var sumOfSquares = 0.0d
+    while (i < p1.coordinates.length) {
+      val diff = p1.coordinates(i) - p2.coordinates(i)
+      sumOfSquares += (diff * diff)
+      i += 1
     }
-
-    override def |-|(other: POINT): DISTANCE = {
-      if (this.values.length != other.values.length)
-        throw new Exception(s"Can't compare: $this $other")
-      var i = 0
-      var sumOfSquares = 0.0f
-      while (i < this.values.length) {
-        val diff = this.values(i) - other.values(i)
-        sumOfSquares += (diff * diff)
-        i += 1
-      }
-      VectorDistance(Math.sqrt(sumOfSquares).toFloat)
-    }
+    Math.sqrt(sumOfSquares)
   }
 
-  override def within(target: POINT, p1: POINT, p2: POINT, distance: DISTANCE): Boolean = {
-    var pos = 0
-    var sumOfSquares = 0L
-    while ({
-      val tv = target.values(pos)
-      val p1v = p1.values(pos)
-      val p2v = p2.values(pos)
-      if (p1v == p2v) {
-        val diff = tv - p1v
+  override def minDistance(target: POINT, rangeMin: POINT, rangeMax: POINT): Distance = {
+    var i = 0
+    var continue = true
+    var sumOfSquares = 0.0d
+    while (i < target.coordinates.length && continue) {
+      val t = target.coordinates(i)
+      val min = rangeMin.coordinates(i)
+      val max = rangeMax.coordinates(i)
+
+      if (min == max) {
+        val diff = t - min
         sumOfSquares += (diff * diff)
-        if (Math.sqrt(sumOfSquares).toFloat > distance.value) return false
       } else {
-        val diff = Math.min(Math.abs(tv - p1v), Math.abs(tv - p2v))
+        val closest =
+          if (t <= min) min
+          else if (t >= max ) max
+          else t
+        val diff = t - closest
         sumOfSquares += (diff * diff)
-        return (Math.sqrt(sumOfSquares).toFloat <= distance.value)
+        continue = false
       }
-      pos += 1
-      (pos < target.values.length)
-    }) {}
-    return (Math.sqrt(sumOfSquares).toFloat <= distance.value)
-  }
-
-  def dotProduct2(p1: POINT, p2: POINT): DISTANCE = {
-    if (p1.values.length != p2.values.length) throw new Exception(s"Can't compare: $p1 $p2")
-    // calculate dot-product
-    var i = 0
-    var distance = 0.0f
-    while (i < p1.values.length) {
-      distance += p1.values(i) * p2.values(i)
       i += 1
     }
-    VectorDistance(distance)
+
+    Math.sqrt(sumOfSquares)
   }
 
-  private def dotProduct(a1: Array[Float], a2: Array[Float]): Float = {
-    if (a1.length != a2.length) throw new Exception(s"Invalid lengths: $a1 $a2")
+
+  def dotProduct(p1: POINT, p2: POINT): Distance = {
+    if (p1.coordinates.length != p2.coordinates.length) throw new Exception(s"Can't compare: $p1 $p2")
     var i = 0
-    var distance = 0.0f
-    while (i < a1.length) {
-      distance += a1(i) * a2(i)
+    var distance = 0.0d
+    while (i < p1.coordinates.length) {
+      distance += p1.coordinates(i) * p2.coordinates(i)
       i += 1
     }
-    return distance
+    distance
   }
 
 }

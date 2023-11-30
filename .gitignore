@@ -1,5 +1,8 @@
 **/.bloop
 .dynamodb-local
 .metals
+.bsp
+.vscode
+metals.sbt
 target
 *~

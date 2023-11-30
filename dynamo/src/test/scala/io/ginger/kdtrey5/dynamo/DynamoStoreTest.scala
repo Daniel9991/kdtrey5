@@ -13,8 +13,7 @@ class DynamoStoreTest extends AnyFunSuite {
   val leaf = KDLeaf(
     id = "root",
     keys = Array(BitSetUtils.bitSetFromString("1011")),
-    values = Array("11"),
-    size = 1
+    values = Array("11")
   )
 
   test("create tables") {
