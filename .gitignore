@@ -6,3 +6,5 @@
 metals.sbt
 target
 *~
+.idea
+.gitignore

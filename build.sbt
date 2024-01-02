@@ -8,10 +8,13 @@ val skiis = "org.alexboisvert" %% "skiis" % "2.0.2-SNAPSHOT"
 
 val awsDynamoDB = "software.amazon.awssdk" % "dynamodb" % "2.20.146"
 
+val sparkCore = "org.apache.spark" %% "spark-core" % "3.5.0"
+
 lazy val core = (project in file("core"))
   .settings(
     libraryDependencies += skiis,
-    libraryDependencies += scalaTest
+    libraryDependencies += scalaTest,
+    libraryDependencies += sparkCore
   )
 
 lazy val dynamo = (project in file("dynamo"))
